@@ -1,4 +1,4 @@
 class Routes {
-  static const String onboardingScreen = '/onboarding';
-  static const String loginScreen = '/login';
+  static const String onboarding = '/onboarding';
+  static const String login = '/login';
 }
