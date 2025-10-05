@@ -1,6 +1,9 @@
+import 'package:doc_doc_app/core/helpers/extentions.dart';
 import 'package:doc_doc_app/core/theming/colors.dart';
 import 'package:doc_doc_app/core/theming/styles.dart';
 import 'package:flutter/material.dart';
+
+import '../../../core/routing/routers.dart';
 
 class GetStartedButton extends StatelessWidget {
   const GetStartedButton({super.key});
@@ -17,7 +20,7 @@ class GetStartedButton extends StatelessWidget {
       ),
 
       onPressed: () {
-        // Handle button press
+        context.pushNamed(Routes.login);
       },
       child: Text('Get Started', style: FontStyles.font16WhiteSemiBold),
     );
