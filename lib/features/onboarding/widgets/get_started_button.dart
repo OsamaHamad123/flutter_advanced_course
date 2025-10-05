@@ -2,7 +2,6 @@ import 'package:doc_doc_app/core/helpers/extentions.dart';
 import 'package:doc_doc_app/core/theming/colors.dart';
 import 'package:doc_doc_app/core/theming/styles.dart';
 import 'package:flutter/material.dart';
-
 import '../../../core/routing/routers.dart';
 
 class GetStartedButton extends StatelessWidget {

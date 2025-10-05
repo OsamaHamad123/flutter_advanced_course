@@ -1,0 +1,11 @@
+flutter_native_splash:
+  #ios and android splash screen configuration
+  color: "#ffffff"
+
+  image: assets/images/Splash.png
+
+  android_12:
+
+  #info_plist_files:
+  #  - 'ios/Runner/Info-Debug.plist'
+  #  - 'ios/Runner/Info-Release.plist'v

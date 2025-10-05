@@ -3,6 +3,7 @@ import 'package:doc_doc_app/core/routing/routers.dart';
 import 'package:doc_doc_app/core/theming/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'features/onboarding/onboarding_screen.dart';
 import 'features/login/ui/login_screen.dart';
 
 class DocApp extends StatelessWidget {
