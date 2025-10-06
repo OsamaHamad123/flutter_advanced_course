@@ -1,9 +1,6 @@
 import 'package:doc_doc_app/core/helpers/extentions.dart';
 import 'package:doc_doc_app/core/theming/colors.dart';
-<<<<<<< HEAD
 import 'package:doc_doc_app/core/theming/styles.dart';
-=======
->>>>>>> development
 import 'package:flutter/material.dart';
 import '../../../core/routing/routers.dart';
 
