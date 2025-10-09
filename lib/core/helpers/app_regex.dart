@@ -4,9 +4,16 @@ class AppRegex {
     return emailRegex.hasMatch(email);
   }
 
+  // static bool isPasswordValid(String password) {
+  //   final passwordRegex = RegExp(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$');
+  //   return passwordRegex.hasMatch(password);
+  // }
   static bool isPasswordValid(String password) {
-    final passwordRegex = RegExp(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$');
-    return passwordRegex.hasMatch(password);
+    return hasLowerCase(password) &&
+        hasUpperCase(password) &&
+        hasNumber(password) &&
+        hasSpecialCharacter(password) &&
+        hasMinLength(password);
   }
 
   static bool hasLowerCase(String password) {
@@ -31,5 +38,19 @@ class AppRegex {
 
   static bool hasMinLength(String password) {
     return password.length >= 8;
+  }
+
+  static bool isPhoneNumberValid(String phoneNumber) {
+    final phoneNumberRegex = RegExp(r'^(010|011|012|015)[0-9]{8}$');
+    return phoneNumberRegex.hasMatch(phoneNumber);
+  }
+
+  static bool isNameValid(String name) {
+    final nameRegex = RegExp(r'^[a-zA-Z ]+$');
+    return nameRegex.hasMatch(name);
+  }
+
+  static isPasswordMatch(String password, String confirmPassword) {
+    return password == confirmPassword;
   }
 }

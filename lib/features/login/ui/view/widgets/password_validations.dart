@@ -9,6 +9,7 @@ class PasswordValidations extends StatelessWidget {
   final bool hasNumber;
   final bool hasSpecialCharacter;
   final bool hasMinLength;
+  final bool? hasMatch; // ← اختياري لو حاب تعرض "Match Password"
 
   const PasswordValidations({
     super.key,
@@ -17,6 +18,7 @@ class PasswordValidations extends StatelessWidget {
     required this.hasNumber,
     required this.hasSpecialCharacter,
     required this.hasMinLength,
+    this.hasMatch,
   });
 
   @override
@@ -26,7 +28,7 @@ class PasswordValidations extends StatelessWidget {
       children: [
         Text(
           'Password must contain:',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
         verticalSpace(8),
         _buildValidationRow('At least one lowercase letter', hasLowerCase),
@@ -41,24 +43,28 @@ class PasswordValidations extends StatelessWidget {
         ),
         verticalSpace(2),
         _buildValidationRow('Minimum 8 characters', hasMinLength),
+        verticalSpace(2),
+        if (hasMatch != null) _buildValidationRow('Passwords match', hasMatch!),
       ],
     );
   }
 
-  Widget _buildValidationRow(String text, bool hasValidate) {
+  Widget _buildValidationRow(String text, bool ok) {
     return Row(
       children: [
-        const CircleAvatar(radius: 2.5, backgroundColor: ColorsManegar.grey),
+        Icon(
+          ok ? Icons.check_circle : Icons.radio_button_unchecked,
+          size: 16,
+          color: ok ? Colors.green : ColorsManegar.grey,
+        ),
         horizontalSpace(6),
         Text(
           text,
           style: FontStyles.font13DarkBlueRegular.copyWith(
-            decoration: hasValidate
-                ? TextDecoration.lineThrough
-                : TextDecoration.none,
+            decoration: ok ? TextDecoration.lineThrough : TextDecoration.none,
             decorationColor: Colors.green,
             decorationThickness: 2,
-            color: hasValidate ? ColorsManegar.grey : ColorsManegar.darkBlue,
+            color: ok ? ColorsManegar.grey : ColorsManegar.darkBlue,
           ),
         ),
       ],
