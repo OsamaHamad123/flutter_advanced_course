@@ -17,7 +17,7 @@ class AlreadyHaveAccountText extends StatelessWidget {
             style: FontStyles.font13DarkBlueRegular,
           ),
           TextSpan(
-            text: 'Sign Up',
+            text: 'Sign In',
             style: FontStyles.font13bluesemiBold,
             recognizer: TapGestureRecognizer()
               ..onTap = () {
