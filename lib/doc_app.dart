@@ -3,7 +3,6 @@ import 'package:doc_doc_app/core/routing/routers.dart';
 import 'package:doc_doc_app/core/theming/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'features/login/ui/view/login_screen.dart';
 
 class DocApp extends StatelessWidget {
   final AppRouter appRouter;
@@ -25,7 +24,6 @@ class DocApp extends StatelessWidget {
           primaryColor: ColorsManegar.mainBlue,
           scaffoldBackgroundColor: Colors.white,
         ),
-
         onGenerateRoute: appRouter.onGenerateRoute,
       ),
     );
