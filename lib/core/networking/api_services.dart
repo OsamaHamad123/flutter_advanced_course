@@ -3,6 +3,8 @@ import 'package:dio/dio.dart';
 import 'package:doc_doc_app/core/networking/api_constants.dart';
 import 'package:doc_doc_app/features/login/data/models/login_request_body_model.dart';
 import 'package:doc_doc_app/features/login/data/models/login_response_model.dart';
+import 'package:doc_doc_app/features/sign_up/data/models/signup_request_body_model.dart';
+import 'package:doc_doc_app/features/sign_up/data/models/signup_response_model.dart';
 import 'package:retrofit/retrofit.dart';
 
 part 'api_services.g.dart';
@@ -14,4 +16,7 @@ abstract class ApiServices {
 
   @POST(ApiConstants.loginEndpoint)
   Future<LoginResponseModel> login(@Body() LoginRequestBodyModel body);
+
+  @POST(ApiConstants.registerEndpoint)
+  Future<SignupResponseModel> register(@Body() SignupRequestBodyModel body);
 }
