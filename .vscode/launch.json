@@ -5,26 +5,24 @@
             "name": "Flutter: DocDoc Development",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "debug",
             "program": "lib/main_development.dart",
             "args": [
                 "--flavor",
-                "development",
-                "--dart-define",
-                "FLAVOR=development"
+                "Development",
+                "--target",
+                "lib/main_development.dart"
             ]
         },
         {
             "name": "Flutter: DocDoc Production",
             "request": "launch",
             "type": "dart",
-            "flutterMode": "profile",
             "program": "lib/main_production.dart",
             "args": [
                 "--flavor",
-                "production",
-                "--dart-define",
-                "FLAVOR=production"
+                "Production",
+                "--target",
+                "lib/main_production.dart"
             ]
         }
     ]
