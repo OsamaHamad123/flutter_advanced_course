@@ -1,11 +1,6 @@
 name: doc_doc_app
 publish_to: "none"
-<<<<<<< HEAD
-version: 1.0.2+1
-=======
-version: 1.0.0+1
->>>>>>> parent of 183e32b (Merge pull request #9 from OsamaHamad123/features/fastlane_firebase_app_disripution)
-
+version: 1.0.3+1
 environment:
   sdk: ^3.9.0
 
