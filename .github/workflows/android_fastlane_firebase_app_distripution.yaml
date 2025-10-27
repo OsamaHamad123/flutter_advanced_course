@@ -38,7 +38,8 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install Flutter
-        uses: subosito/flutter-action@a2d5009f2784a9c51e91d069bf5e4e01e1dfe0e1
+        # use the released v2 tag for maintainability; supports 'channel' input
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
 
@@ -46,7 +47,22 @@ jobs:
         run: flutter pub get
 
       - name: Accept Android SDK licenses
-        run: yes | sdkmanager --licenses
+        # try to accept licenses via sdkmanager in PATH, else try common SDK locations
+        run: |
+          if command -v sdkmanager >/dev/null 2>&1; then
+            yes | sdkmanager --licenses
+          elif [ -x "${ANDROID_SDK_ROOT:-$ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "${ANDROID_SDK_ROOT:-$ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses
+          elif [ -x "${ANDROID_SDK_ROOT:-$ANDROID_HOME}/tools/bin/sdkmanager" ]; then
+            yes | "${ANDROID_SDK_ROOT:-$ANDROID_HOME}/tools/bin/sdkmanager" --licenses
+          else
+            echo "sdkmanager not found; skipping license acceptance"
+          fi
+
+      - name: Setup Node.js (for Firebase CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
 
       - name: Cache Gradle
         uses: actions/cache@v4
