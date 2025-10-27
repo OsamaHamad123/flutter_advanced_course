@@ -3,25 +3,13 @@ name: android-ci-firebase-dist
 on:
   push:
     # run on pushes to any branch; restrict if you want specific branches only
-    branches: ["**"]
-  pull_request:
-    # run on PR open/update/reopen so CI runs for PRs
-    types: [opened, synchronize, reopened]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
+    branches: [master]
 jobs:
   distribute_to_firebase:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout my repo code
         # use the official checkout action tag for clarity and maintainability
         uses: actions/checkout@v4
         with:
@@ -74,16 +62,12 @@ jobs:
           restore-keys: |
             gradle-${{ runner.os }}-
 
-      - name: Setup Ruby (CI-safe)
+      - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.2.2"
+          ruby-version: "3.4.7"
           bundler-cache: true
           working-directory: android
-
-      # احذف هذه الخطوة إذا ستستخدم Service Account JSON
-      - name: Install Firebase CLI
-        run: npm i -g firebase-tools
 
       - name: Build & Distribute with Fastlane
         working-directory: android
