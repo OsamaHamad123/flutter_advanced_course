@@ -2,8 +2,11 @@ name: android-ci-firebase-dist
 
 on:
   push:
-    branches:
-      - master
+    # run on pushes to any branch; restrict if you want specific branches only
+    branches: ["**"]
+  pull_request:
+    # run on PR open/update/reopen so CI runs for PRs
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
@@ -19,7 +22,8 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        # use the official checkout action tag for clarity and maintainability
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -45,7 +49,7 @@ jobs:
         run: yes | sdkmanager --licenses
 
       - name: Cache Gradle
-        uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
+        uses: actions/cache@v4
         with:
           path: |
             ~/.gradle/caches
