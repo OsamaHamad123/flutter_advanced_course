@@ -1,2 +1,2 @@
-# هذا الملف يخزن معرّف التطبيق (Android package name)
-app_identifier("com.example.doc_doc_app")
+json_key_file("") # Path to the json secret file - Follow https://docs.fastlane.tools/actions/supply/#setup to get one
+package_name("com.example.doc_doc_app") # e.g. com.krausefx.app

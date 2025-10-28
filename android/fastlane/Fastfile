@@ -3,13 +3,27 @@ require 'fileutils'
 default_platform(:android)
 
 platform :android do
-  desc "Build flavored appbundle/apk and distribute to Firebase App Distribution"
+  desc "Build flavored AAB/APK and distribute to Firebase App Distribution"
   lane :firebase_distribution do |options|
     workspace = ENV['GITHUB_WORKSPACE'] || Dir.pwd
     UI.message("workspace=#{workspace}")
+
+    # Build control
     skip_build = ENV["SKIP_BUILD"] == "true" || ENV["SKIP_BUILD"] == "1"
     UI.message("SKIP_BUILD=#{ENV['SKIP_BUILD']}")
 
+    # Prepare firebase credentials if provided as JSON secret or path
+    firebase_service_file = nil
+    if ENV['FIREBASE_SERVICE_JSON'] && !ENV['FIREBASE_SERVICE_JSON'].to_s.empty?
+      firebase_service_file = "/tmp/firebase_service_account.json"
+      File.write(firebase_service_file, ENV['FIREBASE_SERVICE_JSON'])
+      UI.message("Wrote FIREBASE_SERVICE_JSON to #{firebase_service_file}")
+    elsif ENV['FIREBASE_SERVICE_JSON_PATH'] && !ENV['FIREBASE_SERVICE_JSON_PATH'].to_s.empty?
+      firebase_service_file = ENV['FIREBASE_SERVICE_JSON_PATH']
+      UI.message("Using FIREBASE_SERVICE_JSON_PATH=#{firebase_service_file}")
+    end
+
+    # Helper to run flutter build commands and capture logs
     def run_cmd(ws, cmd, log)
       begin
         sh("cd #{ws} && #{cmd} > #{log} 2>&1")
@@ -33,18 +47,20 @@ platform :android do
 
       build_ok = false
 
-      # try appbundle with likely flavor names (match your launch.json and build.gradle)
+      # try appbundle flavors (match both lowercase and Capitalized names)
       %w[production Production development Development].each do |fl|
         break if build_ok
         UI.message("try aab flavor: #{fl}")
         build_ok = run_cmd(workspace, "flutter build appbundle --flavor #{fl} --release -v", log_path)
       end
 
+      # default aab
       unless build_ok
         UI.message("try default aab")
         build_ok = run_cmd(workspace, "flutter build appbundle --release -v", log_path)
       end
 
+      # fallback to APK builds
       unless build_ok
         UI.message("fallback to apk builds")
         %w[production Production development Development].each do |fl|
@@ -57,7 +73,7 @@ platform :android do
       end
 
       unless build_ok
-        UI.message("builds failed. tail #{log_path} if exists")
+        UI.message("builds failed. show tail of #{log_path} if exists")
         if File.exist?(log_path)
           begin
             sh("tail -n 200 #{log_path} || true")
@@ -71,7 +87,7 @@ platform :android do
       UI.message("SKIP_BUILD=true, expecting artifacts under #{File.join(workspace,'build')}")
     end
 
-    # collect candidates
+    # locate artifacts (bundle/apk)
     aab_candidates = Dir.glob(File.join(workspace, "android", "app", "build", "outputs", "bundle", "**", "*.aab")) +
                      Dir.glob(File.join(workspace, "build", "**", "*.aab"))
     apk_candidates = Dir.glob(File.join(workspace, "android", "app", "build", "outputs", "apk", "**", "*.apk")) +
@@ -86,22 +102,39 @@ platform :android do
     chosen_apk = apk_candidates.last
     chosen_aab = aab_candidates.last
 
+    # prepare firebase_app_distribution params
+    firebase_params = {
+      app: ENV["FIREBASE_APP_ID"],
+      groups: ENV["FIREBASE_GROUPS"] || "qa",
+      release_notes: ENV["RELEASE_NOTES"] || "CI build"
+    }
+
+    # prefer CLI token if provided
+    if ENV["FIREBASE_CLI_TOKEN"] && !ENV["FIREBASE_CLI_TOKEN"].to_s.empty?
+      firebase_params[:firebase_cli_token] = ENV["FIREBASE_CLI_TOKEN"]
+      UI.message("Using FIREBASE_CLI_TOKEN for authentication")
+    elsif firebase_service_file
+      # supply can accept service_credentials_file or JSON data depending on plugin version
+      firebase_params[:service_credentials_file] = firebase_service_file
+      UI.message("Using service account file for authentication: #{firebase_service_file}")
+    else
+      UI.message("No Firebase auth provided. Set FIREBASE_CLI_TOKEN or FIREBASE_SERVICE_JSON / FIREBASE_SERVICE_JSON_PATH in secrets")
+    end
+
+    # upload artifact
     if chosen_apk && File.exist?(chosen_apk)
       UI.message("uploading APK #{chosen_apk}")
-      firebase_app_distribution(
-        app: ENV["FIREBASE_APP_ID"],
-        apk_path: chosen_apk,
-        groups: ENV["FIREBASE_GROUPS"] || "qa",
-        release_notes: ENV["RELEASE_NOTES"] || "CI build"
-      )
+      firebase_params[:apk_path] = chosen_apk
+      firebase_app_distribution(firebase_params)
     elsif chosen_aab && File.exist?(chosen_aab)
       UI.message("uploading AAB #{chosen_aab}")
-      firebase_app_distribution(
-        app: ENV["FIREBASE_APP_ID"],
-        aab_path: chosen_aab,
-        groups: ENV["FIREBASE_GROUPS"] || "qa",
-        release_notes: ENV["RELEASE_NOTES"] || "CI build"
-      )
+
+      # plugin expects android_artifact_path and android_artifact_type (use uppercase for type)
+      firebase_params[:android_artifact_path] = chosen_aab
+      # use "AAB" uppercase
+      firebase_params[:android_artifact_type] = "AAB"
+
+      firebase_app_distribution(firebase_params)
     else
       UI.message("no artifact found. list outputs for diagnosis")
       begin
@@ -111,6 +144,16 @@ platform :android do
         UI.message("cannot list outputs")
       end
       UI.user_error!("No APK or AAB produced.")
+    end
+
+    # cleanup temp service file if we wrote it
+    if ENV['FIREBASE_SERVICE_JSON'] && firebase_service_file && File.exist?(firebase_service_file)
+      begin
+        File.delete(firebase_service_file)
+        UI.message("Deleted temporary firebase service file #{firebase_service_file}")
+      rescue => _e
+        UI.message("Failed to delete temporary firebase service file: #{_e.message}")
+      end
     end
   end
 end
