@@ -1,0 +1,8 @@
+source "https://rubygems.org"
+
+gem "fastlane", "~> 2.0"
+# تثبيت الإضافة إن كنت تستخدم plugin firebase app distribution في Fastfile
+gem "fastlane-plugin-firebase_app_distribution"
+
+# هذا الملف يخزن معرّف التطبيق (Android package name)
+app_identifier("com.example.doc_doc_app")
