@@ -6,7 +6,7 @@ platform :android do
     # تنظيف وبناء الـ APK الإصدار
     gradle(task: "clean assembleRelease")
 
-    # مسار الـ APK الناتج (تعديل إن كنت تستخدم flavors أو اسم مختلف)
+    # مسار الـ APK الناتج ( تعديل إن لزم)
     apk_path = "app/build/outputs/apk/release/app-release.apk"
 
     # تحقق سريع من وجود الـ APK
@@ -16,9 +16,9 @@ platform :android do
 
     # رفع إلى Firebase App Distribution
     firebase_app_distribution(
-      app: ENV["FIREBASE_APP_ID"],                     # ضع Firebase Android app id في secret أو env
+      app: ENV["FIREBASE_APP_ID"],                     # ضع Firebase Android app id في secret
       apk_path: apk_path,
-      groups: ENV["FIREBASE_GROUPS"] || "qa",          # اسم المجموعة أو قائمة المستلمين
+      groups: ENV["FIREBASE_GROUPS"] || "qa",
       release_notes: ENV["RELEASE_NOTES"] || "CI build from GitHub Actions"
     )
   end
