@@ -15,7 +15,7 @@ class DocLogoAndName extends StatelessWidget {
         // Replace with your logo image
         SvgPicture.asset('assets/svgs/docdoc_logo.svg', height: 50, width: 50),
         SizedBox(width: 10.w),
-        Text('Doc App', style: FontStyles.font24blackBold),
+        Text('Doc App', style: AppTextStyle.font24blackBold),
       ],
     );
   }

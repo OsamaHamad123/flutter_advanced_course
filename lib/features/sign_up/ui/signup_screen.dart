@@ -24,11 +24,11 @@ class SignupScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
 
               children: [
-                Text('Create Account', style: FontStyles.font24blueBold),
+                Text('Create Account', style: AppTextStyle.font24blueBold),
                 verticalSpace(8),
                 Text(
                   'Sign up now and start exploring all that our app has to offer. We\'re excited to welcome you to our community!',
-                  style: FontStyles.font14blueRegular,
+                  style: AppTextStyle.font14blueRegular,
                 ),
                 verticalSpace(36),
                 Column(
@@ -37,7 +37,7 @@ class SignupScreen extends StatelessWidget {
                     verticalSpace(16),
                     AppTextButton(
                       buttonText: 'Create Account',
-                      textStyle: FontStyles.font16WhiteSemiBold,
+                      textStyle: AppTextStyle.font16WhiteSemiBold,
                       onPressed: () {
                         validateThenDoSignup(context);
                       },

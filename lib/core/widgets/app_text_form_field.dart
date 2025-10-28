@@ -61,13 +61,13 @@ class AppTextFormField extends StatelessWidget {
           borderSide: const BorderSide(color: Colors.red, width: 1.3),
         ),
         hintText: hintText,
-        hintStyle: hintStyle ?? FontStyles.font14LightGreyRegular,
+        hintStyle: hintStyle ?? AppTextStyle.font14LightGreyRegular,
         suffixIcon: suffixIcon ?? null,
         fillColor: backgroundColor ?? ColorsManegar.moreLightGrey,
         filled: true,
       ),
       obscureText: isObscureText ?? false,
-      style: FontStyles.font14DarkBlueMedium,
+      style: AppTextStyle.font14DarkBlueMedium,
     );
   }
 }

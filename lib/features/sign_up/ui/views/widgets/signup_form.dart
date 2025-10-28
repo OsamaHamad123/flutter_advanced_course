@@ -27,11 +27,11 @@ class _SignupFormState extends State<SignupForm> {
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.error, color: Colors.red, size: 32),
-        content: Text(error, style: FontStyles.font15DarkBlueMedium),
+        content: Text(error, style: AppTextStyle.font15DarkBlueMedium),
         actions: [
           TextButton(
             onPressed: () => context.pop(),
-            child: Text('Got it', style: FontStyles.font14BlueSemiBold),
+            child: Text('Got it', style: AppTextStyle.font14BlueSemiBold),
           ),
         ],
       ),
