@@ -1,72 +1,130 @@
+# Fastfile - Android build + Firebase App Distribution
+require 'fileutils'
 default_platform(:android)
 
 platform :android do
-  desc "Build release APK and distribute to Firebase App Distribution"
+  desc "Build release APK/AAB and distribute to Firebase App Distribution"
   lane :firebase_distribution do |options|
-    # If workflow already built artifact, skip building here.
+    workspace = ENV['GITHUB_WORKSPACE'] || Dir.pwd || ".."
+    UI.message("GITHUB_WORKSPACE=#{workspace}")
     skip_build = ENV["SKIP_BUILD"] == "true" || ENV["SKIP_BUILD"] == "1"
     UI.message("SKIP_BUILD=#{ENV['SKIP_BUILD']}") if ENV["SKIP_BUILD"]
 
     unless skip_build
-      # تنظيف المشروع (نحاول ولكن لا نوقف التنفيذ إذا فشل)
+      # clean (don't fail the lane if clean fails)
       begin
-        sh("cd .. && flutter clean")
+        sh("cd #{workspace} && flutter clean")
       rescue => _e
         UI.message("flutter clean failed but continuing...")
       end
 
-      # سجل verbose للبناء في ملف للمساعدة في التشخيص
-      log_path = File.join("..", "build", "flutter_build.log")
-      FileUtils.mkdir_p(File.join("..", "build"))
+      # prepare log path
+      log_dir = File.join(workspace, "build")
+      log_path = File.join(log_dir, "flutter_build.log")
+      FileUtils.mkdir_p(log_dir)
 
-      # حاول بناء APK أولاً مع توجيه المخرجات إلى ملف اللوج
+      # try build apk first (verbose -> log)
       build_succeeded = true
       begin
-        sh("cd .. && flutter build apk --release -v > build/flutter_build.log 2>&1")
+        sh("cd #{workspace} && flutter build apk --release -v > #{log_path} 2>&1")
       rescue => e
-        UI.message("flutter build apk failed (see build/flutter_build.log): #{e.message}")
+        UI.message("flutter build apk failed (see #{log_path}): #{e.message}")
         build_succeeded = false
       end
 
-      # إذا فشل APK جرّب AAB (appbundle)
+      # fallback to appbundle if apk failed
       unless build_succeeded
         UI.message("Attempting to build appbundle (AAB) as fallback...")
         begin
-          sh("cd .. && flutter build appbundle --release -v >> build/flutter_build.log 2>&1")
+          sh("cd #{workspace} && flutter build appbundle --release -v >> #{log_path} 2>&1")
         rescue => e2
-          UI.message("Both APK and AAB builds failed. Dumping last 200 lines of build/flutter_build.log for diagnosis:")
-          begin
-            sh("cd .. && tail -n 200 build/flutter_build.log || true")
-          rescue => _tail_err
-            UI.message("Could not tail the log file.")
+          UI.message("Both APK and AAB builds failed. Dumping last 200 lines of #{log_path} for diagnosis:")
+          if File.exist?(log_path)
+            begin
+              sh("tail -n 200 #{log_path} || true")
+            rescue => _tail_err
+              UI.message("Could not tail the log file.")
+            end
+          else
+            UI.message("No build log found at #{log_path}")
           end
-          UI.user_error!("Both APK and AAB builds failed. See build/flutter_build.log for full details.")
+          UI.user_error!("Both APK and AAB builds failed. See #{log_path} for full details.")
         end
       end
     else
-      UI.message("Skipping build step inside fastlane; expecting artifacts already present under ../build/")
+      UI.message("Skipping build step inside fastlane; expecting artifacts already present under #{File.join(workspace,'build')}")
     end
 
-    # عرض مقتطف من مجلد build لمساعدة التشخيص
-    UI.message("Sample of build output files:")
-    sample = Dir.glob(File.join("..", "build", "**", "*")).first(50)
+    # show some files for diagnosis
+    UI.message("Sample of build output files (several paths):")
+    sample = (
+      Dir.glob(File.join(workspace, "build", "**", "*")) +
+      Dir.glob(File.join(workspace, "app", "build", "**", "*")) +
+      Dir.glob(File.join(".", "build", "**", "*"))
+    ).first(80)
     UI.message(sample.join("\n"))
 
-    # حدد ناتج البناء ديناميكياً: بحث عن APK ثم AAB في أكثر من مسار (project build و android/app/build)
-    apk_candidates = (
-      Dir.glob(File.join("..", "build", "**", "*.apk")) +
-      Dir.glob(File.join("..", "app", "build", "**", "*.apk")) +
-      Dir.glob(File.join("..", "app", "build", "**", "*.ap_"))
-    ).uniq.sort_by { |f| File.mtime(f) rescue Time.at(0) }
+    # build list of artifact search paths, include optional ARTIFACTS_DIR
+    artifact_search_paths = []
+    if ENV['ARTIFACTS_DIR'] && !ENV['ARTIFACTS_DIR'].empty?
+      artifact_search_paths << File.join(ENV['ARTIFACTS_DIR'], "**", "*.apk")
+      artifact_search_paths << File.join(ENV['ARTIFACTS_DIR'], "**", "*.aab")
+    end
 
-    aab_candidates = (
-      Dir.glob(File.join("..", "build", "**", "*.aab")) +
-      Dir.glob(File.join("..", "app", "build", "**", "*.aab"))
-    ).uniq.sort_by { |f| File.mtime(f) rescue Time.at(0) }
+    artifact_search_paths += [
+      File.join(workspace, "build", "**", "*.apk"),
+      File.join(workspace, "build", "**", "*.aab"),
+      File.join(workspace, "app", "build", "**", "*.apk"),
+      File.join(workspace, "app", "build", "**", "*.aab"),
+      File.join(".", "build", "**", "*.apk"),
+      File.join(".", "build", "**", "*.aab"),
+      File.join(workspace, "build", "**", "*.ap_"),
+      File.join(workspace, "build", "**", "*.ap_")
+    ]
+
+    apk_candidates = Dir.glob(artifact_search_paths.select { |p| p.end_with?("*.apk") }).uniq.sort_by { |f| File.mtime(f) rescue Time.at(0) }
+    aab_candidates = Dir.glob(artifact_search_paths.select { |p| p.end_with?("*.aab") }).uniq.sort_by { |f| File.mtime(f) rescue Time.at(0) }
+
+    # fallback: also glob generically then filter by extension in case previous selection missed anything
+    if apk_candidates.empty? && aab_candidates.empty?
+      all_found = Dir.glob(File.join(workspace, "**", "*.{apk,aab,ap_}"))
+      apk_candidates = all_found.select { |f| f.end_with?(".apk") }.sort_by { |f| File.mtime(f) rescue Time.at(0) }
+      aab_candidates = all_found.select { |f| f.end_with?(".aab") }.sort_by { |f| File.mtime(f) rescue Time.at(0) }
+    end
 
     UI.message("APK candidates found: #{apk_candidates.join(', ')}")
     UI.message("AAB candidates found: #{aab_candidates.join(', ')}")
 
+    # if skip_build true but nothing found, attempt a quick fallback build here
+    if (apk_candidates.empty? && aab_candidates.empty?) && skip_build
+      UI.message("SKIP_BUILD=true but no artifacts found — attempting a fallback build inside fastlane.")
+      begin
+        sh("cd #{workspace} && flutter build appbundle --release -v > #{File.join(workspace,'build','flutter_build.log')} 2>&1")
+      rescue => _e
+        UI.message("appbundle fallback build failed, attempting APK build as fallback...")
+        begin
+          sh("cd #{workspace} && flutter build apk --release -v >> #{File.join(workspace,'build','flutter_build.log')} 2>&1")
+        rescue => e_final
+          UI.message("Fallback builds failed. Showing tail of log if present:")
+          if File.exist?(File.join(workspace,"build","flutter_build.log"))
+            begin
+              sh("tail -n 200 #{File.join(workspace,'build','flutter_build.log')} || true")
+            rescue => _tail_err
+              UI.message("No build log available.")
+            end
+          else
+            UI.message("No build log available.")
+          end
+          UI.user_error!("Fallback builds failed. Inspect logs for details.")
+        end
+      end
+
+      # refresh candidates after fallback
+      apk_candidates = Dir.glob(File.join(workspace, "**", "*.apk")).uniq.sort_by { |f| File.mtime(f) rescue Time.at(0) }
+      aab_candidates = Dir.glob(File.join(workspace, "**", "*.aab")).uniq.sort_by { |f| File.mtime(f) rescue Time.at(0) }
+    end
+
+    # choose artifact
     if apk_candidates.any?
       apk_path = apk_candidates.last
       UI.message("Using APK: #{apk_path}")
@@ -74,16 +132,17 @@ platform :android do
       aab_path = aab_candidates.last
       UI.message("Using AAB: #{aab_path}")
     else
-      UI.message("No APK/AAB found after build. Tail of last 200 lines of log:")
+      UI.message("No APK/AAB found after build attempts. Showing available build folders for diagnosis:")
       begin
-        sh("cd .. && tail -n 200 build/flutter_build.log || true")
-      rescue => _tail_err
-        UI.message("Could not tail the log file.")
+        sh("ls -la #{File.join(workspace,'build')} || true")
+        sh("ls -la #{File.join(workspace,'android','app','build')} || true")
+      rescue => _err
+        UI.message("Could not list build folders.")
       end
-      UI.user_error!("Gradle build did not produce an APK or AAB. Inspect build/flutter_build.log for the real error.")
+      UI.user_error!("Gradle build did not produce an APK or AAB. Inspect workflow build steps and logs.")
     end
 
-    # رفع إلى Firebase App Distribution (يدعم apk_path أو aab_path)
+    # upload to Firebase App Distribution
     if defined?(apk_path) && File.exist?(apk_path)
       firebase_app_distribution(
         app: ENV["FIREBASE_APP_ID"],
