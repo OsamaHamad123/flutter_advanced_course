@@ -23,22 +23,32 @@ jobs:
         with:
           channel: stable
 
-      - name: Build Android artifact (flutter build appbundle)
-        # Build appbundle (AAB). Falls back to APK if you prefer change to 'flutter build apk --release'
+      - name: Build Android artifact (appbundle with flavor fallback)
         run: |
+          set -e
           flutter --version
           flutter pub get
-          # build appbundle (non-verbose to avoid huge logs); remove '--release' if you need a specific flavor/variant
-          flutter build appbundle --release
-          echo "Build finished. Listing build outputs:"
+          mkdir -p build
+          # Try production flavor first (most likely release)
+          set +e
+          flutter build appbundle --flavor production --release -v 2>&1 | tee build/flutter_build_production.log
+          PROD_STATUS=$?
+          if [ $PROD_STATUS -ne 0 ]; then
+            echo "Production flavor build failed (see build/flutter_build_production.log). Trying development flavor..."
+            flutter build appbundle --flavor development --release -v 2>&1 | tee build/flutter_build_development.log
+          fi
+          set -e
+          echo "Build outputs (top-level):"
           ls -R build || true
         working-directory: .
 
-      - name: Upload build outputs as artifact (for inspection)
+      - name: Upload build outputs and logs as artifacts
         uses: actions/upload-artifact@v4
         with:
           name: android-build-outputs
-          path: build/**
+          path: |
+            build/**
+            android/app/build/outputs/**
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1

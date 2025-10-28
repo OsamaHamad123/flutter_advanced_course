@@ -52,9 +52,20 @@ platform :android do
     sample = Dir.glob(File.join("..", "build", "**", "*")).first(50)
     UI.message(sample.join("\n"))
 
-    # حدد ناتج البناء ديناميكياً: بحث عن APK ثم AAB
-    apk_candidates = Dir.glob(File.join("..", "build", "**", "*.apk")).sort_by { |f| File.mtime(f) rescue Time.at(0) }
-    aab_candidates = Dir.glob(File.join("..", "build", "**", "*.aab")).sort_by { |f| File.mtime(f) rescue Time.at(0) }
+    # حدد ناتج البناء ديناميكياً: بحث عن APK ثم AAB في أكثر من مسار (project build و android/app/build)
+    apk_candidates = (
+      Dir.glob(File.join("..", "build", "**", "*.apk")) +
+      Dir.glob(File.join("..", "app", "build", "**", "*.apk")) +
+      Dir.glob(File.join("..", "app", "build", "**", "*.ap_"))
+    ).uniq.sort_by { |f| File.mtime(f) rescue Time.at(0) }
+
+    aab_candidates = (
+      Dir.glob(File.join("..", "build", "**", "*.aab")) +
+      Dir.glob(File.join("..", "app", "build", "**", "*.aab"))
+    ).uniq.sort_by { |f| File.mtime(f) rescue Time.at(0) }
+
+    UI.message("APK candidates found: #{apk_candidates.join(', ')}")
+    UI.message("AAB candidates found: #{aab_candidates.join(', ')}")
 
     if apk_candidates.any?
       apk_path = apk_candidates.last
