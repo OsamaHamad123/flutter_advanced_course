@@ -3,40 +3,67 @@ default_platform(:android)
 platform :android do
   desc "Build release APK and distribute to Firebase App Distribution"
   lane :firebase_distribution do |options|
-    # استخدام Flutter لبناء الـ APK من جذر المشروع
-    sh("cd .. && flutter clean")
-    sh("cd .. && flutter build apk --release")
+    # تنظيف المشروع أولاً
+    begin
+      sh("cd .. && flutter clean")
+    rescue => _e
+      UI.message("flutter clean failed but continuing...")
+    end
 
-    # حدد ناتج البناء ديناميكياً: ابحث عن أي APK داخل مجلد build ثم خذ الأحدث
-    apk_candidates = Dir.glob(File.join("..", "build", "**", "*.apk")).sort_by { |f| File.mtime(f) rescue Time.at(0) }
-    if apk_candidates.empty?
-      # إن لم يوجد APK، تحقق إن كان تم إنتاج AAB بدلًا من APK
-      aab_candidates = Dir.glob(File.join("..", "build", "**", "*.aab"))
-      if aab_candidates.any?
-        UI.message("No APK found. Found AAB(s): #{aab_candidates.join(', ')}")
-        UI.user_error!("Build produced AAB(s) but no APK. Either build an APK or upload the AAB instead.")
-      else
-        # عرض بعض الملفات للمساعدة في التشخيص
-        sample = Dir.glob(File.join("..", "build", "**", "*")).first(20)
-        UI.message("No APK/AAB found. Sample build files: #{sample.join(', ')}")
-        UI.user_error!("Gradle build did not produce an APK or AAB.")
+    # جرب بناء APK أولاً، إذا فشل نجرب appbundle كبديل
+    build_succeeded = true
+    begin
+      sh("cd .. && flutter build apk --release")
+    rescue => e
+      UI.message("flutter build apk failed: #{e.message}")
+      build_succeeded = false
+    end
+
+    unless build_succeeded
+      UI.message("Attempting to build appbundle (AAB) as fallback...")
+      begin
+        sh("cd .. && flutter build appbundle --release")
+      rescue => e2
+        UI.user_error!("Both APK and AAB builds failed: #{e2.message}")
       end
     end
 
-    apk_path = apk_candidates.last
-    UI.message("Using APK: #{apk_path}")
+    # حدد ناتج البناء ديناميكياً: بحث عن APK ثم AAB
+    apk_candidates = Dir.glob(File.join("..", "build", "**", "*.apk")).sort_by { |f| File.mtime(f) rescue Time.at(0) }
+    aab_candidates = Dir.glob(File.join("..", "build", "**", "*.aab")).sort_by { |f| File.mtime(f) rescue Time.at(0) }
+
+    if apk_candidates.any?
+      apk_path = apk_candidates.last
+      UI.message("Using APK: #{apk_path}")
+    elsif aab_candidates.any?
+      aab_path = aab_candidates.last
+      UI.message("Using AAB: #{aab_path}")
+    else
+      sample = Dir.glob(File.join("..", "build", "**", "*")).first(30)
+      UI.message("No APK/AAB found. Sample build files: #{sample.join(', ')}")
+      UI.user_error!("Gradle build did not produce an APK or AAB.")
+    end
 
     # تحقق سريع من وجود الـ APK
     unless File.exist?(apk_path)
       UI.user_error!("APK not found at #{apk_path}. Adjust the build or path.")
     end
 
-    # رفع إلى Firebase App Distribution
-    firebase_app_distribution(
-      app: ENV["FIREBASE_APP_ID"],                     # ضع Firebase Android app id في secret
-      apk_path: apk_path,
-      groups: ENV["FIREBASE_GROUPS"] || "qa",
-      release_notes: ENV["RELEASE_NOTES"] || "CI build from GitHub Actions"
-    )
+    # رفع إلى Firebase App Distribution (يدعم apk_path أو aab_path)
+    if defined?(apk_path) && File.exist?(apk_path)
+      firebase_app_distribution(
+        app: ENV["FIREBASE_APP_ID"],
+        apk_path: apk_path,
+        groups: ENV["FIREBASE_GROUPS"] || "qa",
+        release_notes: ENV["RELEASE_NOTES"] || "CI build from GitHub Actions"
+      )
+    else
+      firebase_app_distribution(
+        app: ENV["FIREBASE_APP_ID"],
+        aab_path: aab_path,
+        groups: ENV["FIREBASE_GROUPS"] || "qa",
+        release_notes: ENV["RELEASE_NOTES"] || "CI build from GitHub Actions"
+      )
+    end
   end
 end
