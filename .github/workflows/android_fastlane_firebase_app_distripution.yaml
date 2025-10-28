@@ -35,9 +35,8 @@ jobs:
           working-directory: android
 
       - name: Install gem dependencies
-        run: |
-          bundle config set path 'vendor/bundle'
-          bundle install --jobs 4 --retry 3
+        run: bundle lock --add-platform x86_64-linux
+
         working-directory: android
 
       - name: Run fastlane (build + distribute)
