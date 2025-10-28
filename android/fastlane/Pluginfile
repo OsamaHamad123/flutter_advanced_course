@@ -1,0 +1,2 @@
+# List of fastlane plugins for this project
+gem "fastlane-plugin-firebase_app_distribution"
