@@ -23,19 +23,22 @@ jobs:
         with:
           channel: stable
 
-      - name: Build Android artifact (flutter build appbundle) - official debug step
-        # Run build on runner directly to get full verbose log and ensure artifact is produced
+      - name: Build Android artifact (flutter build appbundle)
+        # Build appbundle (AAB). Falls back to APK if you prefer change to 'flutter build apk --release'
         run: |
           flutter --version
           flutter pub get
-          flutter build appbundle --release -v 2>&1 | tee build/flutter_build.log
+          # build appbundle (non-verbose to avoid huge logs); remove '--release' if you need a specific flavor/variant
+          flutter build appbundle --release
+          echo "Build finished. Listing build outputs:"
+          ls -R build || true
         working-directory: .
 
-      - name: Upload build log artifact
+      - name: Upload build outputs as artifact (for inspection)
         uses: actions/upload-artifact@v4
         with:
-          name: flutter_build_log
-          path: build/flutter_build.log
+          name: android-build-outputs
+          path: build/**
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
