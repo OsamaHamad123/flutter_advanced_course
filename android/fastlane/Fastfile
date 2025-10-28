@@ -7,8 +7,24 @@ platform :android do
     sh("cd .. && flutter clean")
     sh("cd .. && flutter build apk --release")
 
-    # مسار الـ APK الناتج عند بناء Flutter من جذر المشروع (نحن نشغّل هذا الـ lane من داخل android/)
-    apk_path = "../build/app/outputs/flutter-apk/app-release.apk"
+    # حدد ناتج البناء ديناميكياً: ابحث عن أي APK داخل مجلد build ثم خذ الأحدث
+    apk_candidates = Dir.glob(File.join("..", "build", "**", "*.apk")).sort_by { |f| File.mtime(f) rescue Time.at(0) }
+    if apk_candidates.empty?
+      # إن لم يوجد APK، تحقق إن كان تم إنتاج AAB بدلًا من APK
+      aab_candidates = Dir.glob(File.join("..", "build", "**", "*.aab"))
+      if aab_candidates.any?
+        UI.message("No APK found. Found AAB(s): #{aab_candidates.join(', ')}")
+        UI.user_error!("Build produced AAB(s) but no APK. Either build an APK or upload the AAB instead.")
+      else
+        # عرض بعض الملفات للمساعدة في التشخيص
+        sample = Dir.glob(File.join("..", "build", "**", "*")).first(20)
+        UI.message("No APK/AAB found. Sample build files: #{sample.join(', ')}")
+        UI.user_error!("Gradle build did not produce an APK or AAB.")
+      end
+    end
+
+    apk_path = apk_candidates.last
+    UI.message("Using APK: #{apk_path}")
 
     # تحقق سريع من وجود الـ APK
     unless File.exist?(apk_path)
