@@ -3,40 +3,48 @@ default_platform(:android)
 platform :android do
   desc "Build release APK and distribute to Firebase App Distribution"
   lane :firebase_distribution do |options|
-    # تنظيف المشروع (نحاول ولكن لا نوقف التنفيذ إذا فشل)
-    begin
-      sh("cd .. && flutter clean")
-    rescue => _e
-      UI.message("flutter clean failed but continuing...")
-    end
+    # If workflow already built artifact, skip building here.
+    skip_build = ENV["SKIP_BUILD"] == "true" || ENV["SKIP_BUILD"] == "1"
+    UI.message("SKIP_BUILD=#{ENV['SKIP_BUILD']}") if ENV["SKIP_BUILD"]
 
-    # سجل verbose للبناء في ملف للمساعدة في التشخيص
-    log_path = File.join("..", "build", "flutter_build.log")
-    FileUtils.mkdir_p(File.join("..", "build"))
-
-    # حاول بناء APK أولاً مع توجيه المخرجات إلى ملف اللوج
-    build_succeeded = true
-    begin
-      sh("cd .. && flutter build apk --release -v > build/flutter_build.log 2>&1")
-    rescue => e
-      UI.message("flutter build apk failed (see build/flutter_build.log): #{e.message}")
-      build_succeeded = false
-    end
-
-    # إذا فشل APK جرّب AAB (appbundle)
-    unless build_succeeded
-      UI.message("Attempting to build appbundle (AAB) as fallback...")
+    unless skip_build
+      # تنظيف المشروع (نحاول ولكن لا نوقف التنفيذ إذا فشل)
       begin
-        sh("cd .. && flutter build appbundle --release -v >> build/flutter_build.log 2>&1")
-      rescue => e2
-        UI.message("Both APK and AAB builds failed. Dumping last 200 lines of build/flutter_build.log for diagnosis:")
-        begin
-          sh("cd .. && tail -n 200 build/flutter_build.log || true")
-        rescue => _tail_err
-          UI.message("Could not tail the log file.")
-        end
-        UI.user_error!("Both APK and AAB builds failed. See build/flutter_build.log for full details.")
+        sh("cd .. && flutter clean")
+      rescue => _e
+        UI.message("flutter clean failed but continuing...")
       end
+
+      # سجل verbose للبناء في ملف للمساعدة في التشخيص
+      log_path = File.join("..", "build", "flutter_build.log")
+      FileUtils.mkdir_p(File.join("..", "build"))
+
+      # حاول بناء APK أولاً مع توجيه المخرجات إلى ملف اللوج
+      build_succeeded = true
+      begin
+        sh("cd .. && flutter build apk --release -v > build/flutter_build.log 2>&1")
+      rescue => e
+        UI.message("flutter build apk failed (see build/flutter_build.log): #{e.message}")
+        build_succeeded = false
+      end
+
+      # إذا فشل APK جرّب AAB (appbundle)
+      unless build_succeeded
+        UI.message("Attempting to build appbundle (AAB) as fallback...")
+        begin
+          sh("cd .. && flutter build appbundle --release -v >> build/flutter_build.log 2>&1")
+        rescue => e2
+          UI.message("Both APK and AAB builds failed. Dumping last 200 lines of build/flutter_build.log for diagnosis:")
+          begin
+            sh("cd .. && tail -n 200 build/flutter_build.log || true")
+          rescue => _tail_err
+            UI.message("Could not tail the log file.")
+          end
+          UI.user_error!("Both APK and AAB builds failed. See build/flutter_build.log for full details.")
+        end
+      end
+    else
+      UI.message("Skipping build step inside fastlane; expecting artifacts already present under ../build/")
     end
 
     # عرض مقتطف من مجلد build لمساعدة التشخيص
