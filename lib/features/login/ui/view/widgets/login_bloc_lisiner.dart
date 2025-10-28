@@ -46,11 +46,11 @@ class LoginBlocLisiner extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.error, color: Colors.red, size: 32),
-        content: Text(error, style: FontStyles.font15DarkBlueMedium),
+        content: Text(error, style: AppTextStyle.font15DarkBlueMedium),
         actions: [
           TextButton(
             onPressed: () => context.pop(),
-            child: Text('Go it', style: FontStyles.font14BlueSemiBold),
+            child: Text('Go it', style: AppTextStyle.font14BlueSemiBold),
           ),
         ],
       ),

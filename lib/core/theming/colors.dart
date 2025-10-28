@@ -9,4 +9,6 @@ class ColorsManegar {
   static const Color lightGrey = Color.fromARGB(255, 161, 148, 148);
   static const Color darkBlue = Color(0xff242424);
   static const Color moreLightGrey = Color(0xffFDFDFF);
+  static const Color softLight = Color(0xffF5F5F5);
+  static const Color colorSoftBlue = Color(0xffF4F8FF);
 }
