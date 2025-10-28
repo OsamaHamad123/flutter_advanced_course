@@ -86,4 +86,14 @@ class AppTextStyle {
     fontWeight: FontWeightHelper.regular,
     color: ColorsManegar.grey,
   );
+  static final TextStyle font18WhiteMedium = TextStyle(
+    fontSize: 18.sp,
+    fontWeight: FontWeightHelper.medium,
+    color: ColorsManegar.white,
+  );
+  static final TextStyle font12bluekRegular = TextStyle(
+    fontSize: 12.sp,
+    fontWeight: FontWeightHelper.regular,
+    color: ColorsManegar.mainBlue,
+  );
 }
