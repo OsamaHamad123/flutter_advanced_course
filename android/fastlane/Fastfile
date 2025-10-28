@@ -3,11 +3,12 @@ default_platform(:android)
 platform :android do
   desc "Build release APK and distribute to Firebase App Distribution"
   lane :firebase_distribution do |options|
-    # تنظيف وبناء الـ APK الإصدار
-    gradle(task: "clean assembleRelease")
+    # استخدام Flutter لبناء الـ APK من جذر المشروع
+    sh("cd .. && flutter clean")
+    sh("cd .. && flutter build apk --release")
 
-    # مسار الـ APK الناتج ( تعديل إن لزم)
-    apk_path = "app/build/outputs/apk/release/app-release.apk"
+    # مسار الـ APK الناتج عند بناء Flutter من جذر المشروع (نحن نشغّل هذا الـ lane من داخل android/)
+    apk_path = "../build/app/outputs/flutter-apk/app-release.apk"
 
     # تحقق سريع من وجود الـ APK
     unless File.exist?(apk_path)
