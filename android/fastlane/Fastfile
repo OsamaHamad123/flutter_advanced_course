@@ -1,21 +1,21 @@
-# Fastfile - flavors-tolerant (tries production/Production development/Development)
+# android/fastlane/Fastfile
 require 'fileutils'
 default_platform(:android)
 
 platform :android do
-  desc "Build APK/AAB for flavors and distribute to Firebase App Distribution"
+  desc "Build flavored appbundle/apk and distribute to Firebase App Distribution"
   lane :firebase_distribution do |options|
     workspace = ENV['GITHUB_WORKSPACE'] || Dir.pwd
-    UI.message("GITHUB_WORKSPACE=#{workspace}")
+    UI.message("workspace=#{workspace}")
     skip_build = ENV["SKIP_BUILD"] == "true" || ENV["SKIP_BUILD"] == "1"
-    UI.message("SKIP_BUILD=#{ENV['SKIP_BUILD']}") if ENV["SKIP_BUILD"]
+    UI.message("SKIP_BUILD=#{ENV['SKIP_BUILD']}")
 
-    def run_cmd(workspace, cmd, log_path)
+    def run_cmd(ws, cmd, log)
       begin
-        sh("cd #{workspace} && #{cmd} > #{log_path} 2>&1")
+        sh("cd #{ws} && #{cmd} > #{log} 2>&1")
         return true
       rescue => e
-        UI.message("#{cmd} failed (see #{log_path}): #{e.message}")
+        UI.message("#{cmd} failed (see #{log}): #{e.message}")
         return false
       end
     end
@@ -24,7 +24,7 @@ platform :android do
       begin
         sh("cd #{workspace} && flutter clean")
       rescue => _e
-        UI.message("flutter clean failed but continuing...")
+        UI.message("flutter clean failed, continuing")
       end
 
       log_dir = File.join(workspace, "build")
@@ -33,22 +33,20 @@ platform :android do
 
       build_ok = false
 
-      # try aab flavors (try lowercase then Capitalized)
+      # try appbundle with likely flavor names (match your launch.json and build.gradle)
       %w[production Production development Development].each do |fl|
         break if build_ok
-        UI.message("Attempting aab flavored build: #{fl}")
+        UI.message("try aab flavor: #{fl}")
         build_ok = run_cmd(workspace, "flutter build appbundle --flavor #{fl} --release -v", log_path)
       end
 
-      # default aab
       unless build_ok
-        UI.message("Attempting default aab build")
+        UI.message("try default aab")
         build_ok = run_cmd(workspace, "flutter build appbundle --release -v", log_path)
       end
 
-      # fallback to apk (flavors then default)
       unless build_ok
-        UI.message("Falling back to APK builds")
+        UI.message("fallback to apk builds")
         %w[production Production development Development].each do |fl|
           break if build_ok
           build_ok = run_cmd(workspace, "flutter build apk --flavor #{fl} --release -v", log_path)
@@ -59,86 +57,60 @@ platform :android do
       end
 
       unless build_ok
-        UI.message("All build attempts failed. Dumping last 200 lines of #{log_path} if present")
+        UI.message("builds failed. tail #{log_path} if exists")
         if File.exist?(log_path)
           begin
             sh("tail -n 200 #{log_path} || true")
-          rescue => _tail_err
-            UI.message("Could not tail the log file.")
+          rescue => _e
+            UI.message("cannot tail log")
           end
-        else
-          UI.message("No build log found at #{log_path}")
         end
-        UI.user_error!("All build attempts failed. See #{log_path} for details.")
+        UI.user_error!("build failed. inspect #{log_path}")
       end
     else
-      UI.message("Skipping build. Expecting artifacts under #{File.join(workspace,'build')}")
+      UI.message("SKIP_BUILD=true, expecting artifacts under #{File.join(workspace,'build')}")
     end
 
-    UI.message("Sample of build output files:")
-    sample = (
-      Dir.glob(File.join(workspace, "android", "app", "build", "outputs", "**", "*")) +
-      Dir.glob(File.join(workspace, "build", "**", "*")) +
-      Dir.glob(File.join(".", "build", "**", "*"))
-    ).first(300)
-    UI.message(sample.join("\n"))
+    # collect candidates
+    aab_candidates = Dir.glob(File.join(workspace, "android", "app", "build", "outputs", "bundle", "**", "*.aab")) +
+                     Dir.glob(File.join(workspace, "build", "**", "*.aab"))
+    apk_candidates = Dir.glob(File.join(workspace, "android", "app", "build", "outputs", "apk", "**", "*.apk")) +
+                     Dir.glob(File.join(workspace, "build", "**", "*.apk"))
 
-    search_paths = [
-      File.join(workspace, "android", "app", "build", "outputs", "bundle", "**", "*.aab"),
-      File.join(workspace, "android", "app", "build", "outputs", "bundle", "**", "*.ap_"),
-      File.join(workspace, "android", "app", "build", "outputs", "bundle", "**", "*.apk"),
-      File.join(workspace, "android", "app", "build", "outputs", "**", "*.apk"),
-      File.join(workspace, "android", "app", "build", "outputs", "**", "*.aab"),
-      File.join(workspace, "build", "**", "*.aab"),
-      File.join(workspace, "build", "**", "*.apk"),
-      File.join(".", "build", "**", "*.aab"),
-      File.join(".", "build", "**", "*.apk")
-    ]
+    aab_candidates.uniq!
+    apk_candidates.uniq!
 
-    apk_candidates = Dir.glob(search_paths.select { |p| p.end_with?("*.apk") }).uniq.sort_by { |f| File.mtime(f) rescue Time.at(0) }
-    aab_candidates = Dir.glob(search_paths.select { |p| p.end_with?("*.aab") }).uniq.sort_by { |f| File.mtime(f) rescue Time.at(0) }
+    UI.message("APK candidates: #{apk_candidates.join(', ')}")
+    UI.message("AAB candidates: #{aab_candidates.join(', ')}")
 
-    if apk_candidates.empty? && aab_candidates.empty?
-      all_found = Dir.glob(File.join(workspace, "android", "app", "build", "outputs", "**", "*.{apk,aab,ap_}")) +
-                  Dir.glob(File.join(workspace, "build", "**", "*.{apk,aab,ap_}"))
-      apk_candidates = all_found.select { |f| f.end_with?(".apk") }.sort_by { |f| File.mtime(f) rescue Time.at(0) }
-      aab_candidates = all_found.select { |f| f.end_with?(".aab") }.sort_by { |f| File.mtime(f) rescue Time.at(0) }
-    end
+    chosen_apk = apk_candidates.last
+    chosen_aab = aab_candidates.last
 
-    UI.message("APK candidates found: #{apk_candidates.join(', ')}")
-    UI.message("AAB candidates found: #{aab_candidates.join(', ')}")
-
-    if apk_candidates.any?
-      apk_path = apk_candidates.last
-      UI.message("Using APK: #{apk_path}")
-    elsif aab_candidates.any?
-      aab_path = aab_candidates.last
-      UI.message("Using AAB: #{aab_path}")
+    if chosen_apk && File.exist?(chosen_apk)
+      UI.message("uploading APK #{chosen_apk}")
+      firebase_app_distribution(
+        app: ENV["FIREBASE_APP_ID"],
+        apk_path: chosen_apk,
+        groups: ENV["FIREBASE_GROUPS"] || "qa",
+        release_notes: ENV["RELEASE_NOTES"] || "CI build"
+      )
+    elsif chosen_aab && File.exist?(chosen_aab)
+      UI.message("uploading AAB #{chosen_aab}")
+      firebase_app_distribution(
+        app: ENV["FIREBASE_APP_ID"],
+        aab_path: chosen_aab,
+        groups: ENV["FIREBASE_GROUPS"] || "qa",
+        release_notes: ENV["RELEASE_NOTES"] || "CI build"
+      )
     else
-      UI.message("No APK/AAB found. Listing outputs directories for diagnosis")
+      UI.message("no artifact found. list outputs for diagnosis")
       begin
         sh("ls -la #{File.join(workspace,'android','app','build','outputs')} || true")
         sh("ls -la #{File.join(workspace,'build')} || true")
-      rescue => _err
-        UI.message("Could not list build folders.")
+      rescue => _e
+        UI.message("cannot list outputs")
       end
-      UI.user_error!("No APK or AAB produced. Inspect logs.")
-    end
-
-    if defined?(apk_path) && File.exist?(apk_path)
-      firebase_app_distribution(
-        app: ENV["FIREBASE_APP_ID"],
-        apk_path: apk_path,
-        groups: ENV["FIREBASE_GROUPS"] || "qa",
-        release_notes: ENV["RELEASE_NOTES"] || "CI build from GitHub Actions"
-      )
-    else
-      firebase_app_distribution(
-        app: ENV["FIREBASE_APP_ID"],
-        aab_path: aab_path,
-        groups: ENV["FIREBASE_GROUPS"] || "qa",
-        release_notes: ENV["RELEASE_NOTES"] || "CI build from GitHub Actions"
-      )
+      UI.user_error!("No APK or AAB produced.")
     end
   end
 end
