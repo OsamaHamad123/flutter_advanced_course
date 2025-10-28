@@ -3,30 +3,46 @@ default_platform(:android)
 platform :android do
   desc "Build release APK and distribute to Firebase App Distribution"
   lane :firebase_distribution do |options|
-    # تنظيف المشروع أولاً
+    # تنظيف المشروع (نحاول ولكن لا نوقف التنفيذ إذا فشل)
     begin
       sh("cd .. && flutter clean")
     rescue => _e
       UI.message("flutter clean failed but continuing...")
     end
 
-    # جرب بناء APK أولاً، إذا فشل نجرب appbundle كبديل
+    # سجل verbose للبناء في ملف للمساعدة في التشخيص
+    log_path = File.join("..", "build", "flutter_build.log")
+    FileUtils.mkdir_p(File.join("..", "build"))
+
+    # حاول بناء APK أولاً مع توجيه المخرجات إلى ملف اللوج
     build_succeeded = true
     begin
-      sh("cd .. && flutter build apk --release")
+      sh("cd .. && flutter build apk --release -v > build/flutter_build.log 2>&1")
     rescue => e
-      UI.message("flutter build apk failed: #{e.message}")
+      UI.message("flutter build apk failed (see build/flutter_build.log): #{e.message}")
       build_succeeded = false
     end
 
+    # إذا فشل APK جرّب AAB (appbundle)
     unless build_succeeded
       UI.message("Attempting to build appbundle (AAB) as fallback...")
       begin
-        sh("cd .. && flutter build appbundle --release")
+        sh("cd .. && flutter build appbundle --release -v >> build/flutter_build.log 2>&1")
       rescue => e2
-        UI.user_error!("Both APK and AAB builds failed: #{e2.message}")
+        UI.message("Both APK and AAB builds failed. Dumping last 200 lines of build/flutter_build.log for diagnosis:")
+        begin
+          sh("cd .. && tail -n 200 build/flutter_build.log || true")
+        rescue => _tail_err
+          UI.message("Could not tail the log file.")
+        end
+        UI.user_error!("Both APK and AAB builds failed. See build/flutter_build.log for full details.")
       end
     end
+
+    # عرض مقتطف من مجلد build لمساعدة التشخيص
+    UI.message("Sample of build output files:")
+    sample = Dir.glob(File.join("..", "build", "**", "*")).first(50)
+    UI.message(sample.join("\n"))
 
     # حدد ناتج البناء ديناميكياً: بحث عن APK ثم AAB
     apk_candidates = Dir.glob(File.join("..", "build", "**", "*.apk")).sort_by { |f| File.mtime(f) rescue Time.at(0) }
@@ -39,14 +55,13 @@ platform :android do
       aab_path = aab_candidates.last
       UI.message("Using AAB: #{aab_path}")
     else
-      sample = Dir.glob(File.join("..", "build", "**", "*")).first(30)
-      UI.message("No APK/AAB found. Sample build files: #{sample.join(', ')}")
-      UI.user_error!("Gradle build did not produce an APK or AAB.")
-    end
-
-    # تحقق سريع من وجود الـ APK
-    unless File.exist?(apk_path)
-      UI.user_error!("APK not found at #{apk_path}. Adjust the build or path.")
+      UI.message("No APK/AAB found after build. Tail of last 200 lines of log:")
+      begin
+        sh("cd .. && tail -n 200 build/flutter_build.log || true")
+      rescue => _tail_err
+        UI.message("Could not tail the log file.")
+      end
+      UI.user_error!("Gradle build did not produce an APK or AAB. Inspect build/flutter_build.log for the real error.")
     end
 
     # رفع إلى Firebase App Distribution (يدعم apk_path أو aab_path)
