@@ -3,3 +3,5 @@ source "https://rubygems.org"
 gem "fastlane", "~> 2.0"
 # تثبيت الإضافة إن كنت تستخدم plugin firebase app distribution في Fastfile
 gem "fastlane-plugin-firebase_app_distribution"
+# إصلاح لمشكلة LoadError على Ruby 3.4+: يوجد جزء من stdlib لم يعد مضمناً، نضيفه هنا
+gem "abbrev"

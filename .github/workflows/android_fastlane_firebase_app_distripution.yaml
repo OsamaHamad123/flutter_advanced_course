@@ -23,12 +23,14 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: "3.4.7"
+          ruby-version: "3.2.2"
           bundler-cache: true
           working-directory: android
 
       - name: Install gem dependencies (bundle install)
-        run: bundle install --jobs 4 --retry 3 --path vendor/bundle
+        run: |
+          bundle config set path 'vendor/bundle'
+          bundle install --jobs 4 --retry 3
         working-directory: android
 
       - name: Build and Distribute App
