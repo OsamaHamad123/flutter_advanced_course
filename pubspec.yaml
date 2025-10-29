@@ -5,6 +5,7 @@ environment:
   sdk: ^3.9.0
 
 dependencies:
+  cached_network_image: ^3.4.1
   dio: ^5.9.0
   easy_localization: ^3.0.8
   firebase_core: ^4.1.1
@@ -22,7 +23,6 @@ dependencies:
   retrofit: ^4.7.3
 
 dev_dependencies:
-  # جنريترات موحّدة على build 3 / element2
   build_runner: ^2.9.0
   flutter_launcher_icons: ^0.14.4
   flutter_lints: ^5.0.0

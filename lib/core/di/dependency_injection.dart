@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:doc_doc_app/core/networking/api_services.dart';
 import 'package:doc_doc_app/core/networking/dio_factory.dart';
+import 'package:doc_doc_app/features/home/data/apis/home_api_service.dart';
+import 'package:doc_doc_app/features/home/data/repos/home_repo.dart';
 import 'package:doc_doc_app/features/login/data/repos/login_repo.dart';
 import 'package:doc_doc_app/features/login/logic/cubit/login_cubit.dart';
 import 'package:doc_doc_app/features/sign_up/data/repos/sign_up_repo.dart';
@@ -22,6 +24,9 @@ Future<void> setupGetIt() async {
   getit.registerFactory<SignupCubit>(() => SignupCubit(getit()));
 
   //home
+  getit.registerLazySingleton<HomeApiService>(() => HomeApiService(dio));
+  getit.registerLazySingleton<HomeRepo>(() => HomeRepo(getit()));
+  // getit.registerFactory<HomeCubit>(() => HomeCubit(getit()));
 }
 // registerFactory : معناها بالتالي كل مرة يتم استخدام هذا الكوبيت يتم انشاء جديد
 // registerLazySingleton : اعمل create  لنسخة واحدة وححتاج نفس النسخة عند كل استخدام

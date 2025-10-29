@@ -1,59 +1,22 @@
-import 'package:doc_doc_app/core/helpers/spacing.dart';
-
-import 'package:doc_doc_app/core/theming/styles.dart';
+import 'package:doc_doc_app/features/home/data/models/specialitization_response_model.dart';
+import 'package:doc_doc_app/features/home/ui/views/widgets/doctors_list_view_item.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class DoctorsListView extends StatelessWidget {
-  const DoctorsListView({super.key});
+  final List<Doctors?>? doctorsList;
+  const DoctorsListView({super.key, required this.doctorsList});
 
   @override
   Widget build(BuildContext context) {
+    try {
+      // ignore: avoid_print
+      print('DoctorsListView: items=${doctorsList?.length ?? 0}');
+    } catch (_) {}
     return Expanded(
       child: ListView.builder(
-        itemCount: 10,
+        itemCount: doctorsList?.length ?? 0,
         itemBuilder: (context, index) {
-          return Container(
-            margin: EdgeInsets.only(bottom: 16.h),
-
-            child: Row(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12.r),
-                  child: Image.asset(
-                    'assets/images/home_view_battern.png',
-                    width: 110.w,
-                    height: 120.h,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                horizontalSpace(12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Dr. Stella Kane',
-                        style: AppTextStyle.font18DarkBlueBold,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      verticalSpace(5),
-                      Text(
-                        'Degree: MBBS, MD - General Medicine, DNB - Cardiology',
-                        style: AppTextStyle.font12GreyMedium,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      verticalSpace(5),
-                      Text(
-                        'Email: 8Nl0n@example.com',
-                        style: AppTextStyle.font12GreyMedium,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
+          return DoctorsListViewItem(dataModel: doctorsList?[index]);
         },
       ),
     );

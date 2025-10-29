@@ -30,6 +30,20 @@ class ApiErrorHandler {
 }
 
 class ErrorHandler {
+  // Data fields so ErrorHandler can be used as a value type in states.
+  final String message;
+  final String code;
+  final bool isRecoverable;
+  final Object? exception;
+
+  const ErrorHandler({
+    required this.message,
+    this.code = 'UNKNOWN',
+    this.isRecoverable = false,
+    this.exception,
+  });
+
+  /// Keep the existing helper for getting a plain message string.
   static String getErrorMessage(Object error) {
     if (error is TimeoutException) {
       return ApiErrors.timeout;
@@ -51,6 +65,84 @@ class ErrorHandler {
       return ApiErrors.rangeError;
     } else {
       return ApiErrors.unknown;
+    }
+  }
+
+  /// Return a structured ErrorHandler instance from an exception. This is
+  /// intended so you can call:
+  ///
+  /// emit(HomeState.specializationsDataError(ErrorHandler.specializedError(error)))
+  static ErrorHandler specializedError(Object error) {
+    if (error is TimeoutException) {
+      return ErrorHandler(
+        code: 'TIMEOUT',
+        message: ApiErrors.timeout,
+        isRecoverable: true,
+        exception: error,
+      );
+    } else if (error is SocketException) {
+      return ErrorHandler(
+        code: 'NO_INTERNET',
+        message: ApiErrors.noInternet,
+        isRecoverable: true,
+        exception: error,
+      );
+    } else if (error is HttpException) {
+      return ErrorHandler(
+        code: 'SERVER_ERROR',
+        message: ApiErrors.serverError,
+        isRecoverable: false,
+        exception: error,
+      );
+    } else if (error is FormatException) {
+      return ErrorHandler(
+        code: 'FORMAT_ERROR',
+        message: ApiErrors.formatError,
+        isRecoverable: false,
+        exception: error,
+      );
+    } else if (error is TypeError) {
+      return ErrorHandler(
+        code: 'TYPE_ERROR',
+        message: ApiErrors.typeError,
+        isRecoverable: false,
+        exception: error,
+      );
+    } else if (error is StateError) {
+      return ErrorHandler(
+        code: 'STATE_ERROR',
+        message: ApiErrors.stateError,
+        isRecoverable: false,
+        exception: error,
+      );
+    } else if (error is ArgumentError) {
+      return ErrorHandler(
+        code: 'ARGUMENT_ERROR',
+        message: ApiErrors.argumentError,
+        isRecoverable: false,
+        exception: error,
+      );
+    } else if (error is NoSuchMethodError) {
+      return ErrorHandler(
+        code: 'NO_SUCH_METHOD',
+        message: ApiErrors.noSuchMethodError,
+        isRecoverable: false,
+        exception: error,
+      );
+    } else if (error is RangeError) {
+      return ErrorHandler(
+        code: 'RANGE_ERROR',
+        message: ApiErrors.rangeError,
+        isRecoverable: false,
+        exception: error,
+      );
+    } else {
+      return ErrorHandler(
+        code: 'UNKNOWN',
+        message: ApiErrors.unknown,
+        isRecoverable: false,
+        exception: error,
+      );
     }
   }
 }
