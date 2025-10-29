@@ -14,6 +14,6 @@ class HomeState with _$HomeState {
   const factory HomeState.specializationsDataSuccess(
     SpecializationResponseModel specializationResponseModel,
   ) = SpecializationsDataSuccess;
-  const factory HomeState.specializationsDataError(ErrorHandler errorHandler) =
+  const factory HomeState.specializatonsDataError(ErrorHandler errorHandler) =
       SpecializationsDataError;
 }
