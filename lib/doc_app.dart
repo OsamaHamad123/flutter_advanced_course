@@ -1,3 +1,4 @@
+import 'package:doc_doc_app/core/helpers/constance.dart';
 import 'package:doc_doc_app/core/routing/app_router.dart' show AppRouter;
 import 'package:doc_doc_app/core/routing/routers.dart';
 import 'package:doc_doc_app/core/theming/colors.dart';
@@ -18,7 +19,7 @@ class DocApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'Doc App',
-        initialRoute: Routes.homeScreen,
+        initialRoute: isLoggedUser ? Routes.homeScreen : Routes.login,
 
         theme: ThemeData(
           primaryColor: ColorsManegar.mainBlue,

@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:doc_doc_app/core/helpers/constance.dart';
+import 'package:doc_doc_app/core/helpers/sheard_pref_helper.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 
 class DioFactory {
@@ -18,15 +20,49 @@ class DioFactory {
     return dio!;
   }
 
-  static void addDioHeaders() {
+  static void addDioHeaders() async {
+    // Keep only synchronous default headers here. The Authorization header is
+    // added per-request by an async interceptor to avoid race conditions when
+    // reading secure storage.
+    dio!.options.headers = {'Accept': 'application/json'};
+  }
+
+  static void setTokenInToHeaderAfterLogin(String token) {
     dio!.options.headers = {
       'Accept': 'application/json',
-      'Authorization':
-          'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL3ZjYXJlLmludGVncmF0aW9uMjUuY29tL2FwaS9hdXRoL2xvZ2luIiwiaWF0IjoxNzYxNjkwNjM1LCJleHAiOjE3NjE3NzcwMzUsIm5iZiI6MTc2MTY5MDYzNSwianRpIjoiSXJiS0hXWHl2UFhPY3RDQSIsInN1YiI6IjU2MzgiLCJwcnYiOiIyM2JkNWM4OTQ5ZjYwMGFkYjM5ZTcwMWM0MDA4NzJkYjdhNTk3NmY3In0.t39sQJD_LdCfUj-V0tP7oo_vF6P07v1B8C1UPqFtqF4',
+      'Authorization': 'Bearer $token',
     };
   }
 
+  static void _addAuthInterceptor() {
+    // This interceptor runs before the request is sent and injects the
+    // Authorization header by reading secure storage asynchronously.
+    dio!.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          try {
+            final token = await SharedPrefHelper.getSecureData(
+              SharedPrefKeys.userTokenKey,
+            );
+            if (token != null && token.isNotEmpty) {
+              options.headers['Authorization'] = 'Bearer $token';
+            } else {
+              // Ensure header is absent when no token
+              options.headers.remove('Authorization');
+            }
+          } catch (_) {
+            // ignore errors reading secure storage and continue request
+          }
+          return handler.next(options);
+        },
+      ),
+    );
+  }
+
   static void addDioInterceptors() {
+    // Add the auth interceptor first so subsequent loggers/interceptors see
+    // the header when printing the request.
+    _addAuthInterceptor();
     dio!.interceptors.add(
       PrettyDioLogger(
         requestHeader: true,

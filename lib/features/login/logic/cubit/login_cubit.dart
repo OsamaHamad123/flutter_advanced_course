@@ -1,4 +1,7 @@
+import 'package:doc_doc_app/core/helpers/constance.dart';
+import 'package:doc_doc_app/core/helpers/sheard_pref_helper.dart';
 import 'package:doc_doc_app/core/networking/api_result.dart';
+import 'package:doc_doc_app/core/networking/dio_factory.dart';
 import 'package:doc_doc_app/features/login/data/models/login_request_body_model.dart';
 import 'package:doc_doc_app/features/login/data/repos/login_repo.dart';
 import 'package:doc_doc_app/features/login/logic/cubit/login_state.dart';
@@ -23,7 +26,8 @@ class LoginCubit extends Cubit<LoginState> {
       ),
     );
     response.when(
-      success: (data) {
+      success: (data) async {
+        await saveUserToken(data.userDate!.token ?? '');
         emit(LoginState.success(data));
       },
       failure: (error) {
@@ -31,5 +35,10 @@ class LoginCubit extends Cubit<LoginState> {
         emit(LoginState.failure(feilure: error.toString()));
       },
     );
+  }
+
+  Future<void> saveUserToken(String token) async {
+    await SharedPrefHelper.setSecureData(SharedPrefKeys.userTokenKey, token);
+    DioFactory.setTokenInToHeaderAfterLogin(token);
   }
 }

@@ -34,12 +34,12 @@ class AppRouter {
       case Routes.homeScreen:
         return MaterialPageRoute(
           builder: (_) => BlocProvider(
-            // Create the HomeCubit and then call getSpecialization() on the cubit.
-            // Previously the cascade was applied to the repository (getit()) which
-            // executed the repo method instead of the cubit's and the cubit never
-            // emitted states. Using the cascade on the cubit ensures it emits
-            // loading/success/error states and the UI will rebuild.
-            create: (context) => HomeCubit(getit())..getSpecialization(),
+            // Create the HomeCubit here. We intentionally DO NOT call
+            // getSpecialization() at creation time to avoid timing issues.
+            // The HomeScreen will call `getSpecialization()` in its
+            // `initState`, guaranteeing the token (saved during login)
+            // is available before the request is made.
+            create: (context) => HomeCubit(getit()),
             child: const HomeScreen(),
           ),
         );
