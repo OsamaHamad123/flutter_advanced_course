@@ -1,4 +1,5 @@
 import 'package:doc_doc_app/core/helpers/extentions.dart';
+import 'package:doc_doc_app/core/networking/api_error_model.dart';
 import 'package:doc_doc_app/core/routing/routers.dart';
 import 'package:doc_doc_app/core/theming/styles.dart';
 import 'package:doc_doc_app/features/sign_up/logic/cubit/signup_cubit.dart';
@@ -13,15 +14,20 @@ class SignupBlocListener extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocListener<SignupCubit, SignupState>(
       listenWhen: (previous, current) {
-        return current is Loading || current is Success || current is Error;
+        // Ensure we listen for signup loading, success and error states.
+        // Previous code checked `current is Error` (dart:core Error) which is
+        // incorrect and prevented showing API error dialogs.
+        return current is SignupLoading ||
+            current is SignupSuccess ||
+            current is SignupError;
       },
       listener: (context, state) {
         state.whenOrNull(
-          success: (data) {
+          signupSuccess: (data) {
             context.pop();
             context.pushNamed(Routes.login);
           },
-          loading: () {
+          signupLoading: () {
             showDialog(
               context: context,
               builder: (context) {
@@ -33,7 +39,10 @@ class SignupBlocListener extends StatelessWidget {
           },
           signupError: (error) {
             context.pop();
-            setupErrorState(context, error);
+            setupErrorState(
+              context,
+              error ?? ApiErrorModel(message: 'An unexpected error occurred.'),
+            );
           },
         );
       },
@@ -41,12 +50,15 @@ class SignupBlocListener extends StatelessWidget {
     );
   }
 
-  void setupErrorState(BuildContext context, String error) {
+  void setupErrorState(BuildContext context, ApiErrorModel error) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.error, color: Colors.red, size: 32),
-        content: Text(error, style: AppTextStyle.font15DarkBlueMedium),
+        content: Text(
+          error.getAllErrorMessages(),
+          style: AppTextStyle.font15DarkBlueMedium,
+        ),
         actions: [
           TextButton(
             onPressed: () => context.pop(),

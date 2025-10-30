@@ -1,4 +1,5 @@
 import 'package:doc_doc_app/core/helpers/extentions.dart';
+import 'package:doc_doc_app/core/networking/api_error_model.dart';
 import 'package:doc_doc_app/core/routing/routers.dart';
 import 'package:doc_doc_app/core/theming/styles.dart';
 import 'package:doc_doc_app/features/login/logic/cubit/login_cubit.dart';
@@ -13,15 +14,17 @@ class LoginBlocLisiner extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocListener<LoginCubit, LoginState>(
       listenWhen: (previous, current) {
-        return current is Loading || current is Success || current is Failure;
+        return current is LoginLoading ||
+            current is LoginSuccess ||
+            current is LoginFailure;
       },
       listener: (context, state) {
         state.whenOrNull(
-          success: (data) {
+          loginSuccess: (data) {
             context.pop();
             context.pushNamed(Routes.homeScreen);
           },
-          loading: () {
+          loginLoading: () {
             showDialog(
               context: context,
               builder: (context) {
@@ -31,7 +34,7 @@ class LoginBlocLisiner extends StatelessWidget {
               },
             );
           },
-          failure: (error) {
+          loginFailure: (error) {
             context.pop();
             setupErrorState(context, error);
           },
@@ -41,12 +44,15 @@ class LoginBlocLisiner extends StatelessWidget {
     );
   }
 
-  void setupErrorState(BuildContext context, String error) {
+  void setupErrorState(BuildContext context, ApiErrorModel error) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         icon: const Icon(Icons.error, color: Colors.red, size: 32),
-        content: Text(error, style: AppTextStyle.font15DarkBlueMedium),
+        content: Text(
+          error.getAllErrorMessages(),
+          style: AppTextStyle.font15DarkBlueMedium,
+        ),
         actions: [
           TextButton(
             onPressed: () => context.pop(),

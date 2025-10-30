@@ -1,5 +1,4 @@
 import 'package:bloc/bloc.dart';
-import 'package:doc_doc_app/core/networking/api_error_handler.dart';
 import 'package:doc_doc_app/core/networking/api_result.dart';
 import 'package:doc_doc_app/features/sign_up/data/models/signup_request_body_model.dart';
 import 'package:doc_doc_app/features/sign_up/data/repos/sign_up_repo.dart';
@@ -18,7 +17,7 @@ class SignupCubit extends Cubit<SignupState> {
   final formKey = GlobalKey<FormState>();
 
   Future emitSignupStates() async {
-    emit(SignupState.loading());
+    emit(SignupState.signupLoading());
 
     final response = await signUpRepo.signUp(
       SignupRequestBodyModel(
@@ -32,10 +31,10 @@ class SignupCubit extends Cubit<SignupState> {
     );
     response.when(
       success: (signupResponse) {
-        emit(SignupState.success(signupResponse));
+        emit(SignupState.signupSuccess(signupResponse));
       },
-      failure: (error) {
-        emit(SignupState.signupError(ErrorHandler.getErrorMessage(error)));
+      failure: (apiErrorModel) {
+        emit(SignupState.signupError(apiErrorModel: apiErrorModel));
       },
     );
   }

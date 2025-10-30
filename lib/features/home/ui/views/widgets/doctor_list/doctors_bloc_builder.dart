@@ -23,7 +23,8 @@ class DoctorsBlocBuilder extends StatelessWidget {
           doctorsDataSuccess: (doctorsList) {
             return setupSuccess(doctorsList);
           },
-          doctorsDataError: (error) => setupError(error.message),
+          doctorsDataError: (error) =>
+              setupError(error.message ?? 'An unexpected error occurred.'),
           orElse: () => const SizedBox.shrink(),
         );
       },

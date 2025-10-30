@@ -45,7 +45,7 @@ class _SignupFormState extends State<SignupForm> {
     return BlocListener<SignupCubit, SignupState>(
       listener: (context, state) {
         state.whenOrNull(
-          loading: () {
+          signupLoading: () {
             showDialog(
               context: context,
               barrierDismissible: false,
@@ -54,13 +54,16 @@ class _SignupFormState extends State<SignupForm> {
               ),
             );
           },
-          success: (_) {
+          signupSuccess: (_) {
             context.pop(); // close spinner
             context.pushNamed(Routes.login);
           },
           signupError: (error) {
             context.pop(); // close spinner
-            _showErrorDialog(context, error);
+            _showErrorDialog(
+              context,
+              error?.message ?? 'An unexpected error occurred.',
+            );
           },
         );
       },

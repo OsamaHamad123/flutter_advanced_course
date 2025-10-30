@@ -28,7 +28,8 @@ class SpecializationsBlocBuilder extends StatelessWidget {
             return setupSuccess(specializationsList);
           },
 
-          specializationsDataError: (error) => setupError(error.message),
+          specializationsDataError: (error) =>
+              setupError(error.message ?? 'An unexpected error occurred.'),
           orElse: () => const SizedBox.shrink(),
         );
       },
