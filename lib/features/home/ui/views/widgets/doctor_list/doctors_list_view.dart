@@ -1,5 +1,5 @@
 import 'package:doc_doc_app/features/home/data/models/specialitization_response_model.dart';
-import 'package:doc_doc_app/features/home/ui/views/widgets/doctors_list_view_item.dart';
+import 'package:doc_doc_app/features/home/ui/views/widgets/doctor_list/doctors_list_view_item.dart';
 import 'package:flutter/material.dart';
 
 class DoctorsListView extends StatelessWidget {
@@ -12,13 +12,11 @@ class DoctorsListView extends StatelessWidget {
       // ignore: avoid_print
       print('DoctorsListView: items=${doctorsList?.length ?? 0}');
     } catch (_) {}
-    return Expanded(
-      child: ListView.builder(
-        itemCount: doctorsList?.length ?? 0,
-        itemBuilder: (context, index) {
-          return DoctorsListViewItem(dataModel: doctorsList?[index]);
-        },
-      ),
+    return ListView.builder(
+      itemCount: doctorsList?.length ?? 0,
+      itemBuilder: (context, index) {
+        return DoctorsListViewItem(dataModel: doctorsList?[index]);
+      },
     );
   }
 }

@@ -38,6 +38,11 @@ extension Navigation on BuildContext {
 extension StringExtensions on String? {
   bool get isNullOrEmpty => this == null || this == '';
 }
+
+extension ListExtensions<T> on List<T?>? {
+  bool get isNullOrEmpty => this == null || this!.isEmpty;
+}
+
 //فائدة هذه الامتدادات هي تسهيل عملية التنقل بين الشاشات في تطبيق Flutter.
 //بدلاً من كتابة Navigator.of(context).pushNamed(...) في كل مرة تحتاج فيها إلى التنقل،
 //يمكنك ببساطة استخدام context.pushNamed(...)، مما يجعل الكود أكثر نظافة
