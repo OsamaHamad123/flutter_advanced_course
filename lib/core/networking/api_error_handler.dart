@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:doc_doc_app/core/networking/api_constants.dart';
 import 'package:doc_doc_app/core/networking/api_error_model.dart';
 
 class ApiErrorHandler {
   static ApiErrorModel fromException(Object error) {
-    if (error is TimeoutException) {
+    if (error is DioException) {
       return ApiErrorModel(message: ApiErrors.timeout);
     } else if (error is SocketException) {
       return ApiErrorModel(message: ApiErrors.noInternet);
@@ -26,6 +27,23 @@ class ApiErrorHandler {
     } else {
       return ApiErrorModel(message: ApiErrors.unknown);
     }
+  }
+
+  // Moved/Improved handler to be part of ApiErrorHandler.
+  static ApiErrorModel fromResponse(int? statusCode, dynamic errorResponse) {
+    if (errorResponse is Map<String, dynamic>) {
+      return ApiErrorModel(
+        statusCode: statusCode,
+        message: (errorResponse['message'] as String?) ?? 'An error occurred',
+        errorResponseData: errorResponse['data'] as Map<String, dynamic>?,
+      );
+    }
+
+    // Fallback for non-map responses (string, null, etc.)
+    return ApiErrorModel(
+      statusCode: statusCode,
+      message: errorResponse?.toString() ?? 'An error occurred',
+    );
   }
 }
 

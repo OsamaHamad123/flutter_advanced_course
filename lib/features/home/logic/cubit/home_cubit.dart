@@ -1,6 +1,7 @@
 import 'package:doc_doc_app/core/helpers/extentions.dart';
 import 'package:doc_doc_app/core/networking/api_error_handler.dart';
 import 'package:doc_doc_app/core/networking/api_constants.dart';
+import 'package:doc_doc_app/core/networking/api_error_model.dart';
 import 'package:doc_doc_app/core/networking/api_result.dart';
 import 'package:doc_doc_app/features/home/data/models/specialitization_response_model.dart';
 import 'package:doc_doc_app/features/home/data/repos/home_repo.dart';
@@ -30,11 +31,10 @@ class HomeCubit extends Cubit<HomeState> {
         final statusMsg = ApiErrors.fromStatusCode(error.statusCode);
         emit(
           HomeState.specializationsDataError(
-            ErrorHandler(
+            ApiErrorModel(
               message: message == null || message.isEmpty ? statusMsg : message,
-              code: 'API_ERROR',
-              isRecoverable: false,
-              exception: error,
+              statusCode: error.statusCode,
+              errorResponseData: error.errorResponseData,
             ),
           ),
         );
@@ -49,11 +49,7 @@ class HomeCubit extends Cubit<HomeState> {
     } else {
       emit(
         HomeState.doctorsDataError(
-          ErrorHandler(
-            message: 'No doctors found for this specialization',
-            code: 'NO_DOCTORS',
-            isRecoverable: false,
-          ),
+          ApiErrorModel(message: 'No doctors found for this specialization.'),
         ),
       );
     }
