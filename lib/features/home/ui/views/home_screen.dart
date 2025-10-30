@@ -1,9 +1,10 @@
 import 'package:doc_doc_app/core/helpers/spacing.dart';
 import 'package:doc_doc_app/features/home/logic/cubit/home_cubit.dart';
+import 'package:doc_doc_app/features/home/ui/views/widgets/doctor_list/doctors_bloc_builder.dart';
 import 'package:doc_doc_app/features/home/ui/views/widgets/doctors_blue_container.dart';
 import 'package:doc_doc_app/features/home/ui/views/widgets/doctors_specialists_see_all.dart';
 import 'package:doc_doc_app/features/home/ui/views/widgets/home_top_bar.dart';
-import 'package:doc_doc_app/features/home/ui/views/widgets/specializations_and_doctors_bloc_builder.dart';
+import 'package:doc_doc_app/features/home/ui/views/widgets/specializations_list/specializations_bloc_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -45,8 +46,9 @@ class _HomeScreenState extends State<HomeScreen> {
               verticalSpace(24),
               const DoctorsSpecialistsSeeAll(),
               verticalSpace(18),
-
-              const SpecializationsAndDoctorsBlocBuilder(),
+              const SpecializationsBlocBuilder(),
+              verticalSpace(8),
+              const Expanded(child: DoctorsBlocBuilder()),
             ],
           ),
         ),
